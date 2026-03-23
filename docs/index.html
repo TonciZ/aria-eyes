@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>aria-eyes Demo — Color Claim Verification for Accessibility</title>
+  <meta name="description" content="Interactive demo of aria-eyes: see how it catches mismatches between aria-label color claims and actual CSS colors. WCAG 1.4.1 automated testing.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #242836;
+      --border: #2e3345;
+      --text: #e1e4ed;
+      --text-muted: #8b90a0;
+      --accent: #6c8aff;
+      --accent-dim: #3d5199;
+      --pass: #34d399;
+      --pass-bg: rgba(52, 211, 153, 0.1);
+      --fail: #f87171;
+      --fail-bg: rgba(248, 113, 113, 0.1);
+      --warn: #fbbf24;
+      --warn-bg: rgba(251, 191, 36, 0.1);
+      --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 3rem 0 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 span { color: var(--accent); }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto 1.25rem;
+    }
+
+    .header-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .header-links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.4rem 1rem;
+      border: 1px solid var(--accent-dim);
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+
+    .header-links a:hover {
+      background: rgba(108, 138, 255, 0.1);
+    }
+
+    /* Section */
+    section {
+      margin-bottom: 3rem;
+    }
+
+    section h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section > p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* Demo grid */
+    .demo-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .demo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .demo-element {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .demo-info {
+      min-width: 0;
+    }
+
+    .demo-info .label {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      word-break: break-all;
+    }
+
+    .demo-info .label b {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .demo-info .detail {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .demo-info .detail code {
+      font-family: var(--mono);
+      background: var(--surface-2);
+      padding: 0.1em 0.4em;
+      border-radius: 3px;
+      font-size: 0.75rem;
+    }
+
+    .demo-result {
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .badge-pass {
+      background: var(--pass-bg);
+      color: var(--pass);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+    }
+
+    .badge-fail {
+      background: var(--fail-bg);
+      color: var(--fail);
+      border: 1px solid rgba(248, 113, 113, 0.25);
+    }
+
+    .badge-close {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    .demo-message {
+      grid-column: 1 / -1;
+      font-size: 0.8rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      font-family: var(--mono);
+    }
+
+    .msg-pass {
+      background: var(--pass-bg);
+      color: var(--pass);
+    }
+
+    .msg-fail {
+      background: var(--fail-bg);
+      color: var(--fail);
+    }
+
+    /* Try it section */
+    .try-it {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .try-it-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .try-it label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+      font-weight: 500;
+    }
+
+    .try-it input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .try-it input:focus {
+      border-color: var(--accent);
+    }
+
+    .try-it-preview {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .color-swatch {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #try-result {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      background: var(--surface-2);
+      min-height: 60px;
+    }
+
+    /* Contrast section */
+    .contrast-demo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .contrast-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .contrast-preview {
+      padding: 1.25rem;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .contrast-details {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .contrast-details code {
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 1rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 0 0 6px 6px;
+      z-index: 100;
+      font-size: 0.9rem;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    /* Focus styles */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .demo-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-color: var(--accent);
+    }
+
+    .header-links a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .contrast-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 640px) {
+      .demo-card { grid-template-columns: 1fr; }
+      .demo-result { text-align: left; }
+      .try-it-row { grid-template-columns: 1fr; }
+      .contrast-demo { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#demo-examples">Skip to demo examples</a>
+  <div class="container">
+
+    <header role="banner">
+      <h1><span>aria-eyes</span> Demo</h1>
+      <p>See how aria-eyes catches mismatches between color claims in accessibility labels and actual CSS colors.</p>
+      <nav aria-label="Project links" class="header-links">
+        <a href="https://github.com/TonciZ/aria-eyes">GitHub</a>
+        <a href="https://www.npmjs.com/package/@aria-eyes/core">npm: core</a>
+        <a href="https://www.npmjs.com/package/@aria-eyes/playwright">npm: playwright</a>
+      </nav>
+    </header>
+
+    <!-- Color claim verification -->
+    <section aria-labelledby="color-claim-heading" id="demo-examples">
+      <h2 id="color-claim-heading">Color Claim Verification (WCAG 1.4.1)</h2>
+      <p>aria-eyes scans aria-labels and alt text for color words, then checks if the element's actual CSS color matches. Here are examples of what it catches.</p>
+
+      <div class="demo-grid" role="list" aria-label="Color claim verification examples">
+
+        <!-- Pass: blue button is blue -->
+        <div class="demo-card" role="listitem" tabindex="0" aria-label="Pass: blue submit button, background is blue, match">
+          <div class="demo-element" style="background-color: #1a73e8;" aria-hidden="true">BTN</div>
+          <div class="demo-info">
+            <div class="label">aria-label="<b>blue</b> submit button"</div>
+            <div class="detail">background-color: <code>#1a73e8</code> mapped to <code>blue</code></div>
+          </div>
+          <div class="demo-result"><span class="badge badge-pass">Match</span></div>
+          <div class="demo-message msg-pass">PASS: "blue" matches background-color (blue)</div>
+        </div>
+
+        <!-- Fail: says blue but is red -->
+        <div class="demo-card" role="listitem" tabindex="0" aria-label="Fail: label claims blue action button, but background is red, mismatch">
+          <div class="demo-element" style="background-color: #e53e3e;" aria-hidden="true">BTN</div>
+          <div class="demo-info">
+            <div class="label">aria-label="<b>blue</b> action button"</div>
+            <div class="detail">background-color: <code>#e53e3e</code> mapped to <code>red</code></div>
+          </div>
+          <div class="demo-result"><span class="badge badge-fail">Mismatch</span></div>
+          <div class="demo-message msg-fail">FAIL: Label claims "blue" but background-color is red (#e53e3e)</div>
+        </div>
+
+        <!-- Pass: crimson maps to red -->
+        <div class="demo-card" role="listitem" tabindex="0" aria-label="Pass: crimson warning badge, crimson maps to red category, match">
+          <div class="demo-element" style="background-color: #dc143c;" aria-hidden="true">!</div>
+          <div class="demo-info">
+            <div class="label">aria-label="<b>crimson</b> warning badge"</div>
+            <div class="detail">background-color: <code>#dc143c</code> mapped to <code>red</code>. "crimson" maps to red category.</div>
+          </div>
+          <div class="demo-result"><span class="badge badge-pass">Match</span></div>
+          <div class="demo-message msg-pass">PASS: "crimson" matches background-color (red)</div>
+        </div>
+
+        <!-- Fail: says green but is orange -->
+        <div class="demo-card" role="listitem" tabindex="0" aria-label="Fail: label claims green status indicator, but background is yellow, mismatch">
+          <div class="demo-element" style="background-color: #f59e0b;" aria-hidden="true">OK</div>
+          <div class="demo-info">
+            <div class="label">aria-label="<b>green</b> status indicator"</div>
+            <div class="detail">background-color: <code>#f59e0b</code> mapped to <code>yellow</code></div>
+          </div>
+          <div class="demo-result"><span class="badge badge-fail">Mismatch</span></div>
+          <div class="demo-message msg-fail">FAIL: Label claims "green" but background-color is yellow (#f59e0b)</div>
+        </div>
+
+        <!-- Pass: navy maps to blue -->
+        <div class="demo-card" role="listitem" tabindex="0" aria-label="Pass: navy documentation link, navy maps to blue category, match">
+          <div class="demo-element" style="background-color: #000080;" aria-hidden="true">DOC</div>
+          <div class="demo-info">
+            <div class="label">aria-label="<b>navy</b> documentation link"</div>
+            <div class="detail">background-color: <code>#000080</code> mapped to <code>blue</code>. "navy" maps to blue category.</div>
+          </div>
+          <div class="demo-result"><span class="badge badge-pass">Match</span></div>
+          <div class="demo-message msg-pass">PASS: "navy" matches background-color (blue)</div>
+        </div>
+
+        <!-- Fail: alt text mismatch -->
+        <div class="demo-card" role="listitem" tabindex="0" aria-label="Fail: alt text claims red error icon, but background is purple, mismatch">
+          <div class="demo-element" style="background-color: #8b5cf6;" aria-hidden="true">ERR</div>
+          <div class="demo-info">
+            <div class="label">alt="<b>red</b> error icon"</div>
+            <div class="detail">background-color: <code>#8b5cf6</code> mapped to <code>purple</code></div>
+          </div>
+          <div class="demo-result"><span class="badge badge-fail">Mismatch</span></div>
+          <div class="demo-message msg-fail">FAIL: Label claims "red" but background-color is purple (#8b5cf6)</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Interactive try-it -->
+    <section aria-labelledby="try-it-heading">
+      <h2 id="try-it-heading">Try It Yourself</h2>
+      <p>Enter a color claim and a CSS color to see what aria-eyes would report.</p>
+
+      <div class="try-it">
+        <div class="try-it-row">
+          <div>
+            <label for="claim-input">Color word in label</label>
+            <input type="text" id="claim-input" value="blue" placeholder="e.g. blue, crimson, dark green">
+          </div>
+          <div>
+            <label for="color-input">Actual CSS color (hex)</label>
+            <input type="text" id="color-input" value="#1a73e8" placeholder="e.g. #ff0000, #1a73e8">
+          </div>
+        </div>
+        <div class="try-it-preview">
+          <div class="color-swatch" id="color-swatch" style="background-color: #1a73e8;"></div>
+          <div id="try-result" class="msg-pass" role="status" aria-live="polite">Checking...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contrast -->
+    <section aria-labelledby="contrast-heading">
+      <h2 id="contrast-heading">Contrast Ratio Checking (WCAG 1.4.3)</h2>
+      <p>aria-eyes also calculates WCAG contrast ratios. Here are examples of passing and failing text.</p>
+
+      <div class="contrast-demo" role="list" aria-label="Contrast ratio examples">
+        <div class="contrast-card" role="listitem" tabindex="0" aria-label="Pass: contrast ratio 16.6 to 1, #1a1d27 on white, passes WCAG AA">
+          <div class="contrast-preview" style="color: #1a1d27; background: #ffffff;">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="contrast-details">
+            <code>#1a1d27 on #ffffff</code>
+            <span class="badge badge-pass">16.6:1 AA</span>
+          </div>
+        </div>
+
+        <div class="contrast-card" role="listitem" tabindex="0" aria-label="Fail: contrast ratio 1.6 to 1, #c0c0c0 on white, fails WCAG AA">
+          <div class="contrast-preview" style="color: #c0c0c0; background: #ffffff;">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="contrast-details">
+            <code>#c0c0c0 on #ffffff</code>
+            <span class="badge badge-fail">1.6:1 Fail</span>
+          </div>
+        </div>
+
+        <div class="contrast-card" role="listitem" tabindex="0" aria-label="Pass: contrast ratio 4.9 to 1, #1a73e8 on #0f1117, passes WCAG AA">
+          <div class="contrast-preview" style="color: #1a73e8; background: #0f1117;">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="contrast-details">
+            <code>#1a73e8 on #0f1117</code>
+            <span class="badge badge-pass">4.9:1 AA</span>
+          </div>
+        </div>
+
+        <div class="contrast-card" role="listitem" tabindex="0" aria-label="Fail: contrast ratio 2.2 to 1, #666666 on #333333, fails WCAG AA">
+          <div class="contrast-preview" style="color: #666666; background: #333333;">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="contrast-details">
+            <code>#666666 on #333333</code>
+            <span class="badge badge-fail">2.2:1 Fail</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer role="contentinfo">
+      <p>Built by <a href="https://github.com/TonciZ">Tonci Z.</a> — <a href="https://github.com/TonciZ/aria-eyes">View on GitHub</a></p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Color word to basic category mapping (subset of core)
+    const COLOR_MAP = {
+      red: "red", orange: "orange", yellow: "yellow", green: "green",
+      blue: "blue", purple: "purple", pink: "pink", brown: "brown",
+      black: "black", white: "white", gray: "gray", grey: "gray",
+      crimson: "red", scarlet: "red", maroon: "red", ruby: "red",
+      burgundy: "red", vermilion: "red",
+      navy: "blue", teal: "blue", cyan: "blue", azure: "blue",
+      cobalt: "blue", indigo: "blue", cerulean: "blue", sapphire: "blue",
+      lime: "green", olive: "green", emerald: "green", mint: "green",
+      sage: "green", forest: "green", jade: "green",
+      violet: "purple", lavender: "purple", magenta: "purple", plum: "purple",
+      mauve: "purple", lilac: "purple", amethyst: "purple", fuchsia: "purple",
+      coral: "orange", salmon: "orange", peach: "orange", tangerine: "orange",
+      amber: "orange", gold: "yellow", golden: "yellow", cream: "yellow",
+      beige: "yellow", ivory: "white",
+      rose: "pink", blush: "pink",
+      tan: "brown", chocolate: "brown", coffee: "brown", sienna: "brown",
+      umber: "brown", khaki: "brown",
+      charcoal: "gray", silver: "gray", slate: "gray", ash: "gray",
+    };
+
+    // Simple hex to basic color (approximation for demo)
+    const BASIC_COLORS = {
+      red:    { r: 255, g: 0,   b: 0   },
+      orange: { r: 255, g: 165, b: 0   },
+      yellow: { r: 255, g: 255, b: 0   },
+      green:  { r: 0,   g: 128, b: 0   },
+      blue:   { r: 0,   g: 0,   b: 255 },
+      purple: { r: 128, g: 0,   b: 128 },
+      pink:   { r: 255, g: 192, b: 203 },
+      brown:  { r: 165, g: 42,  b: 42  },
+      black:  { r: 0,   g: 0,   b: 0   },
+      white:  { r: 255, g: 255, b: 255 },
+      gray:   { r: 128, g: 128, b: 128 },
+    };
+
+    function hexToRgb(hex) {
+      const h = hex.replace('#', '');
+      const full = h.length === 3
+        ? h[0]+h[0]+h[1]+h[1]+h[2]+h[2]
+        : h.slice(0, 6);
+      return {
+        r: parseInt(full.slice(0, 2), 16),
+        g: parseInt(full.slice(2, 4), 16),
+        b: parseInt(full.slice(4, 6), 16),
+      };
+    }
+
+    function colorDistance(c1, c2) {
+      return Math.sqrt(
+        (c1.r - c2.r) ** 2 +
+        (c1.g - c2.g) ** 2 +
+        (c1.b - c2.b) ** 2
+      );
+    }
+
+    function hexToBasicColor(hex) {
+      const rgb = hexToRgb(hex);
+      let closest = 'gray';
+      let minDist = Infinity;
+      for (const [name, ref] of Object.entries(BASIC_COLORS)) {
+        const d = colorDistance(rgb, ref);
+        if (d < minDist) { minDist = d; closest = name; }
+      }
+      return closest;
+    }
+
+    function runCheck() {
+      const claimInput = document.getElementById('claim-input').value.trim().toLowerCase();
+      const colorInput = document.getElementById('color-input').value.trim();
+      const swatch = document.getElementById('color-swatch');
+      const resultEl = document.getElementById('try-result');
+
+      // Validate hex
+      if (!/^#?[0-9a-fA-F]{3,8}$/.test(colorInput)) {
+        resultEl.textContent = 'Enter a valid hex color (e.g. #ff0000)';
+        resultEl.className = '';
+        return;
+      }
+
+      const hex = colorInput.startsWith('#') ? colorInput : '#' + colorInput;
+      swatch.style.backgroundColor = hex;
+
+      // Find the claimed category
+      const claimedCategory = COLOR_MAP[claimInput];
+      if (!claimedCategory) {
+        resultEl.textContent = `"${claimInput}" is not a recognized color word. Try: blue, crimson, navy, teal, etc.`;
+        resultEl.className = '';
+        return;
+      }
+
+      const actualCategory = hexToBasicColor(hex);
+      const match = claimedCategory === actualCategory;
+
+      if (match) {
+        resultEl.textContent = `PASS: "${claimInput}" (category: ${claimedCategory}) matches ${hex} (detected: ${actualCategory})`;
+        resultEl.className = 'msg-pass';
+      } else {
+        resultEl.textContent = `FAIL: "${claimInput}" claims ${claimedCategory}, but ${hex} is ${actualCategory}`;
+        resultEl.className = 'msg-fail';
+      }
+    }
+
+    document.getElementById('claim-input').addEventListener('input', runCheck);
+    document.getElementById('color-input').addEventListener('input', runCheck);
+    runCheck();
+  </script>
+</body>
+</html>
