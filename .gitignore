@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.js
+*.d.ts
+!packages/core/src/color-namer.d.ts
+*.map
+!jest.config.js
+!vitest.config.ts
+.DS_Store
+
+# Internal planning and spec files
+.planning/
+CLAUDE.md
+aria-eyes-spec.md

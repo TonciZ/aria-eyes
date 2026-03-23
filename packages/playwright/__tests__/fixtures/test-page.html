@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>aria-eyes test fixture</title>
+  <style>
+    .blue-btn { color: #ffffff; background-color: #1a73e8; border: 2px solid #1a73e8; padding: 8px 16px; }
+    .red-badge { color: #ffffff; background-color: #ff0000; padding: 4px 8px; border: none; }
+    .mismatch-btn { color: #ffffff; background-color: #ff0000; padding: 8px 16px; border: none; }
+    .green-icon { color: #008000; }
+    .low-contrast { color: #cccccc; background-color: #ffffff; }
+    .good-contrast { color: #333333; background-color: #ffffff; }
+    .navy-link { color: #000080; }
+  </style>
+</head>
+<body>
+  <!-- Correct color claims -->
+  <button class="blue-btn" aria-label="blue submit button">Submit</button>
+  <span class="red-badge" aria-label="red notification badge">3</span>
+  <span class="green-icon" aria-label="green status indicator">●</span>
+  <a class="navy-link" aria-label="navy documentation link" href="#">Docs</a>
+
+  <!-- Mismatch: label says blue but element is red -->
+  <button class="mismatch-btn" aria-label="blue action button">Action</button>
+
+  <!-- Alt text with color -->
+  <img src="" alt="red warning icon" style="display:inline-block; width:16px; height:16px; background:#ff0000;">
+
+  <!-- Contrast test elements -->
+  <p class="low-contrast">This text has low contrast</p>
+  <p class="good-contrast">This text has good contrast</p>
+
+  <!-- No color claims (should be skipped) -->
+  <button aria-label="submit form">Submit</button>
+
+  <!-- aria-labelledby -->
+  <span id="label-text">green indicator</span>
+  <div aria-labelledby="label-text" style="color: #008000;">●</div>
+</body>
+</html>

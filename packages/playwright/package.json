@@ -1,0 +1,46 @@
+{
+  "name": "@aria-eyes/playwright",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Playwright plugin for automated accessibility color claim verification",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "prepublishOnly": "npm run build"
+  },
+  "author": "Tonči Žižić",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@aria-eyes/core": "*"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0"
+  },
+  "keywords": [
+    "accessibility", "a11y", "wcag", "wcag-2.1", "wcag-1.4.1", "wcag-1.4.3",
+    "playwright", "playwright-plugin", "playwright-test",
+    "color-verification", "color-contrast", "contrast-ratio",
+    "aria-label", "alt-text", "color-match",
+    "accessibility-testing", "automated-testing", "accessibility-checker",
+    "e2e-testing", "visual-testing",
+    "axe-core", "pa11y"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TonciZ/aria-eyes",
+    "directory": "packages/playwright"
+  }
+}
