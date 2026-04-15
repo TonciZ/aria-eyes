@@ -79,6 +79,30 @@ export async function collectElements(
             styles[prop] = computed.getPropertyValue(prop);
           }
 
+          // Also check descendant elements (up to 2 levels deep) for
+          // background-color swatches. Common pattern: the aria-label is on a
+          // parent, but the visual color indicator is a child element.
+          const descendants: Element[] = [];
+          for (const child of htmlEl.children) {
+            descendants.push(child);
+            for (const grandchild of child.children) {
+              descendants.push(grandchild);
+            }
+          }
+          for (const child of descendants) {
+            const childComputed = window.getComputedStyle(child as HTMLElement);
+            const childBg = childComputed.getPropertyValue("background-color");
+            if (
+              childBg &&
+              childBg !== "rgba(0, 0, 0, 0)" &&
+              childBg !== "transparent" &&
+              childBg !== styles["background-color"]
+            ) {
+              styles["child:background-color"] = childBg;
+              break; // use the first non-transparent, non-duplicate child bg
+            }
+          }
+
           // Build a unique-ish selector for reporting
           const selector = buildSelector(htmlEl);
 

@@ -30,9 +30,15 @@ export async function verifyColorAccessibility(
   if (checkColorClaims) {
     for (const el of elements) {
       for (const claim of el.claims) {
-        // Check each CSS property for a match
+        // First pass: check all CSS properties and collect results
+        const claimResults: Array<{
+          prop: string;
+          value: string;
+          result: ReturnType<typeof matchColor>;
+        }> = [];
+
         for (const [prop, value] of Object.entries(el.computedStyles)) {
-          if (!value || value === "rgba(0, 0, 0, 0)") continue; // transparent
+          if (!value || value === "rgba(0, 0, 0, 0)") continue;
 
           const result = matchColor(
             claim.word,
@@ -40,7 +46,17 @@ export async function verifyColorAccessibility(
             value,
             options.coreOptions
           );
+          claimResults.push({ prop, value, result });
+        }
 
+        // If any property (including child:background-color) matches,
+        // suppress failures on other properties for this claim.
+        // This avoids false positives where e.g. text is black but a
+        // child swatch correctly displays the claimed color.
+        const anyMatch = claimResults.some((r) => r.result.match);
+
+        for (const { prop, value, result } of claimResults) {
+          if (anyMatch && !result.match) continue; // suppress false positive
           if (!result.match || options.includePasses) {
             colorViolations.push({
               selector: el.selector,
